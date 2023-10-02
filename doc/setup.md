@@ -13,8 +13,8 @@ This doc describes how to set up CDC pipeline
 
 Sink connector image needs to be built locally.
 Use the following script to build the image
-`docker/package-build-sink-on-debezium-base.sh`
-[docker/package-build-sink-on-debezium-base.sh](../docker/package-build-sink-on-debezium-base.sh)
+`sink-connector/docker/package-build-sink-on-debezium-base.sh`
+[sink-connector/docker/package-build-sink-on-debezium-base.sh](../sink-connector/docker/package-build-sink-on-debezium-base.sh)
 Future: Github releases will push docker images to Docker hub.
 
 ## docker-compose
@@ -107,8 +107,8 @@ The sink connector can be deleted using the following script
 # References
 Kafka Connect REST API - (https://docs.confluent.io/platform/current/connect/references/restapi.html)
 
-[docker-compose.yaml]: ../deploy/docker/docker-compose-apicurio-schema-registry.override.yaml
-[Dockerfile]: ../docker/Dockerfile-sink-on-debezium-base-image
+[docker-compose.yaml]: ../sink-connector/deploy/docker/docker-compose-apicurio-schema-registry.override.yaml
+[Dockerfile]: ../sink-connector/docker/Dockerfile-sink-on-debezium-base-image
 
 ## Connecting to a different MySQL instance(Host)
 
