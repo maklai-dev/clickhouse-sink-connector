@@ -86,5 +86,9 @@ public class ClickHouseBatchRunnableTest {
 
         Assert.assertTrue(tableName.equalsIgnoreCase("customers"));
 
+        tableName = run.getTableFromTopic("dbsync.server1.test.products");
+
+        Assert.assertTrue(tableName.equalsIgnoreCase("products"));
+
     }
 }
