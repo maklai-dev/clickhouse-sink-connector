@@ -30,6 +30,12 @@ public class UtilsTest {
         String tableName = Utils.getTableNameFromTopic(topicName);
 
         Assert.assertEquals(tableName, "employees");
+
+        topicName = "chsync.server1.test.products";
+        tableName = Utils.getTableNameFromTopic(topicName);
+
+        Assert.assertEquals(tableName, "products");
     }
+    
 }
 
