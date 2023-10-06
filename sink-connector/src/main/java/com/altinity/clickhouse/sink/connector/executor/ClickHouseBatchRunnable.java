@@ -75,6 +75,7 @@ public class ClickHouseBatchRunnable implements Runnable {
         dbCredentials.setPort(config.getInt(ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_PORT.toString()));
         dbCredentials.setUserName(config.getString(ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_USER.toString()));
         dbCredentials.setPassword(config.getString(ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_PASS.toString()));
+        dbCredentials.setClusterName(config.getString(ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_CLUSTER.toString()));
 
         return dbCredentials;
     }
