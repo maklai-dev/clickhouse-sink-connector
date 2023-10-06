@@ -49,9 +49,10 @@ public class DbWriterTest {
         String userName = "default";
         String password = "";
         String tableName = "employees";
+        String clusterName = null;
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        writer = new DbWriter(hostName, port, database, tableName, userName, password, config, null);
+        writer = new DbWriter(hostName, port, database, tableName, clusterName, userName, password, config, null);
 
     }
 
@@ -101,8 +102,9 @@ public class DbWriterTest {
         String userName = clickHouseContainer.getUsername();
         String password = clickHouseContainer.getPassword();
         String tableName = "employees";
+        String clusterName = null;
 
-        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, userName, password,
+        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, clusterName, userName, password,
                 new ClickHouseSinkConnectorConfig(new HashMap<>()), null);
         Map<String, String> columnDataTypesMap = writer.getColumnsDataTypesForTable("employees");
 
@@ -110,7 +112,7 @@ public class DbWriterTest {
         Assert.assertTrue(columnDataTypesMap.size() == 20);
 
         String database2 = "employees2";
-        DbWriter writer2 = new DbWriter(dbHostName, port, database2, tableName, userName, password,
+        DbWriter writer2 = new DbWriter(dbHostName, port, database2, tableName, clusterName, userName, password,
                 new ClickHouseSinkConnectorConfig(new HashMap<>()), null);
         Map<String, String> columnDataTypesMap2 = writer2.getColumnsDataTypesForTable("employees");
 
@@ -128,8 +130,9 @@ public class DbWriterTest {
         String userName = clickHouseContainer.getUsername();
         String password = clickHouseContainer.getPassword();
         String tableName = "employees";
+        String clusterName = null;
 
-        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, userName, password,
+        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, clusterName, userName, password,
                 new ClickHouseSinkConnectorConfig(new HashMap<>()), null);
         MutablePair<DBMetadata.TABLE_ENGINE, String> result = new DBMetadata().getTableEngineUsingShowTable(writer.getConnection(), "default", "employees");
         Assert.assertTrue(result.getLeft() == DBMetadata.TABLE_ENGINE.REPLACING_MERGE_TREE);
@@ -157,8 +160,9 @@ public class DbWriterTest {
         String userName = clickHouseContainer.getUsername();
         String password = clickHouseContainer.getPassword();
         String tableName = "employees";
+        String clusterName = null;
 
-        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, userName, password,
+        DbWriter writer = new DbWriter(dbHostName, port, database, tableName, clusterName, userName, password,
                 new ClickHouseSinkConnectorConfig(new HashMap<>()), null);
         MutablePair< DBMetadata.TABLE_ENGINE, String> result = new DBMetadata().getTableEngineUsingSystemTables(writer.getConnection(),
                 database, "employees");
@@ -212,13 +216,14 @@ public class DbWriterTest {
         String userName = "root";
         String password = "root";
         String tableName = "employees";
+        String clusterName = null;
 
         String connectionUrl = writer.getConnectionString(hostName, port, database);
         Properties properties = new Properties();
         properties.setProperty("client_name", "Test_1");
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, userName, password, config, null);
+        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, clusterName, userName, password, config, null);
 
         Map<MutablePair<String, Map<String, Integer>>, List<ClickHouseStruct>> queryToRecordsMap = new HashMap<>();
 
@@ -247,13 +252,14 @@ public class DbWriterTest {
         String database = "default";
         String userName = "default";
         String tableName = "employees";
+        String clusterName = null;
 
         Properties properties = new Properties();
         properties.setProperty("client_name", "Test_1");
         properties.setProperty("session_id", "123333");
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, userName, "", config, null);
+        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, clusterName, userName, "", config, null);
         String url = dbWriter.getConnectionString(hostName, port, database);
 
         /**
@@ -309,12 +315,13 @@ public class DbWriterTest {
         String userName = "root";
         String password = "root";
         String tableName = "employees";
+        String clusterName = null;
 
         Properties properties = new Properties();
         properties.setProperty("client_name", "Test_1");
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, userName, password, config, null);
+        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, clusterName, userName, password, config, null);
         String url = dbWriter.getConnectionString(hostName, port, database);
 
         String insertQueryTemplate = "insert into employees values(?,?,?,?,?,?)";

@@ -19,7 +19,7 @@ public class ClickHouseAlterTable extends ClickHouseTableOperationsBase{
             this.op = op;
         }
     }
-    public String createAlterTableSyntax(String tableName, Map<String, String> colNameToDataTypesMap, ALTER_TABLE_OPERATION operation) {
+    public String createAlterTableSyntax(String tableName, String clusterName, Map<String, String> colNameToDataTypesMap, ALTER_TABLE_OPERATION operation) {
         // alter table <table_name>
         // add column `col_name_1` data_type_1,
         // add column `col_name_2` data_type_2
@@ -28,6 +28,10 @@ public class ClickHouseAlterTable extends ClickHouseTableOperationsBase{
 
         alterTableSyntax.append(ClickHouseDbConstants.ALTER_TABLE).append(" ").append(tableName).append(" ");
 
+        if(clusterName != null) {
+            alterTableSyntax.append("ON CLUSTER '").append(clusterName).append("' ");
+        }
+        
         for(Map.Entry<String, String>  entry: colNameToDataTypesMap.entrySet()) {
             if(operation.name().equalsIgnoreCase(ALTER_TABLE_OPERATION.ADD.op)) {
                 alterTableSyntax.append(ClickHouseDbConstants.ALTER_TABLE_ADD_COLUMN).append(" ");

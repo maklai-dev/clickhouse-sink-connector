@@ -44,6 +44,8 @@ public class DbWriter extends BaseDbWriter {
 
     private final String tableName;
 
+    private final String clusterName;
+
     // Map of column names to data types.
     private Map<String, String> columnNameToDataTypeMap = new LinkedHashMap<>();
 
@@ -74,6 +76,7 @@ public class DbWriter extends BaseDbWriter {
             Integer port,
             String database,
             String tableName,
+            String clusterName,
             String userName,
             String password,
             ClickHouseSinkConnectorConfig config,
@@ -82,6 +85,7 @@ public class DbWriter extends BaseDbWriter {
         // Base class initiates connection using JDBC.
         super(hostName, port, database, userName, password, config);
         this.tableName = tableName;
+        this.clusterName = clusterName;
 
         this.config = config;
 
@@ -94,7 +98,7 @@ public class DbWriter extends BaseDbWriter {
             DBMetadata metadata = new DBMetadata();
             try {
                 if (false == metadata.checkIfDatabaseExists(this.conn, database)) {
-                    new ClickHouseCreateDatabase().createNewDatabase(this.conn, database);
+                    new ClickHouseCreateDatabase().createNewDatabase(this.conn, database, clusterName);
                 }
             } catch(Exception e) {
                 log.error("Error creating Database", database);
@@ -117,7 +121,7 @@ public class DbWriter extends BaseDbWriter {
                             fields = record.getAfterStruct().schema().fields().toArray(new Field[0]);
                         }
 
-                        act.createNewTable(record.getPrimaryKey(), tableName, fields, this.conn);
+                        act.createNewTable(record.getPrimaryKey(), tableName, clusterName, fields, this.conn);
                         this.columnNameToDataTypeMap = this.getColumnsDataTypesForTable(tableName);
                         response = metadata.getTableEngine(this.conn, database, tableName);
                         this.engine = response.getLeft();
@@ -322,7 +326,11 @@ public class DbWriter extends BaseDbWriter {
                                         Map<MutablePair<String, Map<String, Integer>>, List<ClickHouseStruct>> queryToRecordsMap) {
         if(record.getCdcOperation().getOperation().equalsIgnoreCase(ClickHouseConverter.CDC_OPERATION.TRUNCATE.getOperation())) {
             MutablePair<String, Map<String, Integer>> mp = new MutablePair<>();
-            mp.setLeft(String.format("TRUNCATE TABLE %s", this.tableName));
+            if(this.clusterName != null) {
+                mp.setLeft(String.format("TRUNCATE TABLE %s ON CLUSTER '%s'", this.tableName, this.clusterName));
+            } else {
+                mp.setLeft(String.format("TRUNCATE TABLE %s", this.tableName));
+            }
             mp.setRight(new HashMap<String, Integer>());
             ArrayList<ClickHouseStruct> records = new ArrayList<>();
             records.add(record);
@@ -389,7 +397,7 @@ public class DbWriter extends BaseDbWriter {
             Map<String, String> colNameToDataTypeMap = cat.getColumnNameToCHDataTypeMapping(missingFieldsArray);
 
             if(!colNameToDataTypeMap.isEmpty()) {
-                String alterTableQuery = cat.createAlterTableSyntax(this.tableName, colNameToDataTypeMap, ClickHouseAlterTable.ALTER_TABLE_OPERATION.ADD);
+                String alterTableQuery = cat.createAlterTableSyntax(this.tableName, this.clusterName, colNameToDataTypeMap, ClickHouseAlterTable.ALTER_TABLE_OPERATION.ADD);
                 log.info(" ***** ALTER TABLE QUERY **** " + alterTableQuery);
 
                 try {
@@ -498,8 +506,16 @@ public class DbWriter extends BaseDbWriter {
             }
 
             if(!truncatedRecords.isEmpty()) {
+                String query = null;
 
-                PreparedStatement ps = this.conn.prepareStatement("TRUNCATE TABLE " + this.tableName);
+                if(this.clusterName != null)
+                {
+                    query = String.format("TRUNCATE TABLE %s ON CLUSTER '%s'", this.tableName, this.clusterName);
+                } else {
+                    query = String.format("TRUNCATE TABLE %s", this.tableName);
+                }
+
+                PreparedStatement ps = this.conn.prepareStatement(query);
                 ps.execute();
 
                 //this.conn.commit();
