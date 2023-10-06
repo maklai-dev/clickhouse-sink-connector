@@ -203,6 +203,17 @@ public class ClickHouseSinkConnectorConfig extends AbstractConfig {
                         ConfigDef.Width.NONE,
                         ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_PORT.toString())
                 .define(
+                        ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_CLUSTER.toString(),
+                        Type.STRING,
+                        null,
+                        new ConfigDef.NonEmptyString(),
+                        Importance.HIGH,
+                        "ClickHouse cluster name",
+                        CONFIG_GROUP_CLICKHOUSE_LOGIN_INFO,
+                        3,
+                        ConfigDef.Width.NONE,
+                        ClickHouseSinkConnectorConfigVariables.CLICKHOUSE_CLUSTER.toString())                        
+                .define(
                         ClickHouseSinkConnectorConfigVariables.STORE_KAFKA_METADATA.toString(),
                         Type.BOOLEAN,
                         "false",

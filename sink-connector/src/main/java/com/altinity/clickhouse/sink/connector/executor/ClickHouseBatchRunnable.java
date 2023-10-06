@@ -129,7 +129,7 @@ public class ClickHouseBatchRunnable implements Runnable {
         DbWriter writer = null;
 
         writer = new DbWriter(this.dbCredentials.getHostName(), this.dbCredentials.getPort(),
-                    this.dbCredentials.getDatabase(), tableName, this.dbCredentials.getUserName(),
+                    this.dbCredentials.getDatabase(), tableName, this.dbCredentials.getClusterName(), this.dbCredentials.getUserName(),
                     this.dbCredentials.getPassword(), this.config, record);
         this.topicToDbWriterMap.put(topicName, writer);
         return writer;

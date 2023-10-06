@@ -24,9 +24,9 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
 
     private static final Logger log = LoggerFactory.getLogger(ClickHouseAutoCreateTable.class.getName());
 
-    public void createNewTable(ArrayList<String> primaryKey, String tableName, Field[] fields, ClickHouseConnection connection) throws SQLException {
+    public void createNewTable(ArrayList<String> primaryKey, String tableName, String clusterName, Field[] fields, ClickHouseConnection connection) throws SQLException {
         Map<String, String> colNameToDataTypeMap = this.getColumnNameToCHDataTypeMapping(fields);
-        String createTableQuery = this.createTableSyntax(primaryKey, tableName, fields, colNameToDataTypeMap);
+        String createTableQuery = this.createTableSyntax(primaryKey, tableName, clusterName, fields, colNameToDataTypeMap);
         log.info("**** AUTO CREATE TABLE " + createTableQuery);
         // ToDO: need to run it before a session is created.
         this.runQuery(createTableQuery, connection);
@@ -39,11 +39,17 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
      * @param columnToDataTypesMap
      * @return CREATE TABLE query
      */
-    public java.lang.String createTableSyntax(ArrayList<String> primaryKey, String tableName, Field[] fields, Map<String, String> columnToDataTypesMap) {
+    public java.lang.String createTableSyntax(ArrayList<String> primaryKey, String tableName, String clusterName, Field[] fields, Map<String, String> columnToDataTypesMap) {
 
         StringBuilder createTableSyntax = new StringBuilder();
 
-        createTableSyntax.append(CREATE_TABLE).append(" ").append(tableName).append("(");
+        createTableSyntax.append(CREATE_TABLE).append(" ").append(tableName);
+
+        if (clusterName != null) {
+            createTableSyntax.append(" ON CLUSTER '").append(clusterName).append("' ");
+        }
+        
+        createTableSyntax.append("(");
 
         for(Field f: fields) {
             String colName = f.name();
@@ -80,7 +86,8 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
 
         createTableSyntax.append(")");
         createTableSyntax.append(" ");
-        createTableSyntax.append("ENGINE = ReplacingMergeTree(").append(VERSION_COLUMN).append(")");
+        createTableSyntax.append("ENGINE = ");
+        createTableSyntax.append(clusterName != null ? "Replicated" : "").append("ReplacingMergeTree(").append(VERSION_COLUMN).append(")");
         createTableSyntax.append(" ");
 
         if(primaryKey != null && isPrimaryKeyColumnPresent(primaryKey, columnToDataTypesMap)) {
