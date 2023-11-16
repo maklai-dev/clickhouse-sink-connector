@@ -154,8 +154,8 @@ public class DebeziumChangeEventCapture {
             Struct struct = (Struct) sr.value();
 
             if (struct == null) {
-                log.error("STRUCT EMPTY");
-                //return;
+                log.warn(String.format("STRUCT EMPTY - not a valid CDC record + Record(%s)", record.toString()));
+                return;
             }
             if (struct.schema() == null) {
                 log.error("SCHEMA EMPTY");
@@ -171,7 +171,7 @@ public class DebeziumChangeEventCapture {
                     .orElse(null);
             if (matchingDDLField != null) {
                 String DDL = (String) struct.get("ddl");
-                //log.info("Source DB DDL: " + DDL);
+                log.debug("Source DB DDL: " + DDL);
 
 
                 if (DDL != null && DDL.isEmpty() == false)
@@ -254,9 +254,11 @@ public class DebeziumChangeEventCapture {
             enableSnapshotDDLPropertyFlag = true;
         }
 
-//        if(isDropOrTruncate.get()== false) {
-//            return false;
-//        }
+        String disableDropAndTruncateProperty = props.getProperty(SinkConnectorLightWeightConfig.DISABLE_DROP_TRUNCATE);
+        if(disableDropAndTruncateProperty != null && disableDropAndTruncateProperty.equalsIgnoreCase("true") && isDropOrTruncate.get()== true) {
+            log.debug("Ignoring Drop or Truncate");
+            return true;
+        }
         if(isSnapshotDDL== true && enableSnapshotDDLPropertyFlag == false) {
             // User wants to ignore snapshot
             return true;

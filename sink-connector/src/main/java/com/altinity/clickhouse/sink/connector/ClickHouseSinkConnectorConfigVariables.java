@@ -12,7 +12,7 @@ public enum ClickHouseSinkConnectorConfigVariables {
 
     CLICKHOUSE_URL("clickhouse.server.url"),
     CLICKHOUSE_USER("clickhouse.server.user"),
-    CLICKHOUSE_PASS("clickhouse.server.pass"),
+    CLICKHOUSE_PASS("clickhouse.server.password"),
     CLICKHOUSE_DATABASE("clickhouse.server.database"),
     CLICKHOUSE_PORT("clickhouse.server.port"),
 
@@ -58,8 +58,9 @@ public enum ClickHouseSinkConnectorConfigVariables {
     // Config variable when set to true, columns will be added.
     ENABLE_SCHEMA_EVOLUTION("schema.evolution"),
 
-    SNOWFLAKE_ID("snowflake.id");
+    SNOWFLAKE_ID("snowflake.id"),
 
+    PERSIST_RAW_BYTES("persist.raw.bytes");
 
     private String label;
 

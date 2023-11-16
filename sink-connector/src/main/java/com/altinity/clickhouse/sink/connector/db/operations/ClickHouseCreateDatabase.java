@@ -7,9 +7,9 @@ import java.sql.SQLException;
 public class ClickHouseCreateDatabase extends ClickHouseTableOperationsBase {
     public void createNewDatabase(ClickHouseConnection conn, String dbName, String clusterName) throws SQLException {
         if (clusterName != null) {
-            this.runQuery(String.format("CREATE DATABASE IF NOT EXISTS %s ON CLUSTER '%s'", dbName, clusterName), conn);
+            this.runQuery(String.format("USE system; CREATE DATABASE IF NOT EXISTS %s ON CLUSTER '%s'; USE %s;", dbName, clusterName, dbName), conn);
         } else {
-            this.runQuery(String.format("CREATE DATABASE IF NOT EXISTS %s", dbName), conn);
+            this.runQuery(String.format("USE system; CREATE DATABASE IF NOT EXISTS %s; USE %s", dbName, dbName), conn);
         }
     }
 }
