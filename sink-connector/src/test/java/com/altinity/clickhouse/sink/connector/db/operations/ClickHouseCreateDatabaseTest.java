@@ -38,11 +38,12 @@ public class ClickHouseCreateDatabaseTest {
         String userName = "default";
         String password = "";
         String systemDb = "system";
+        String clusterName = "";
         dbName = "test_create_db";
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        dbWriter = new DbWriter(hostName, port, dbName, null, userName, password, config, null);
-        maintenanceDbWriter = new DbWriter(hostName, port, systemDb, null, userName, password, config, null);
+        dbWriter = new DbWriter(hostName, port, dbName, null, clusterName, userName, password, config, null);
+        maintenanceDbWriter = new DbWriter(hostName, port, systemDb, null, clusterName, userName, password, config, null);
     }
 
     @BeforeEach                                         
@@ -56,7 +57,7 @@ public class ClickHouseCreateDatabaseTest {
         ClickHouseCreateDatabase act = new ClickHouseCreateDatabase();
         ClickHouseConnection conn = dbWriter.getConnection();
         try {
-            act.createNewDatabase(conn, dbName);
+            act.createNewDatabase(conn, dbName, "");
         } catch(SQLException se) {
             //System.out.println(se.getMessage());
             Assert.assertTrue(false);
