@@ -1,13 +1,24 @@
-name: Sink Connector(Kafka version) tests
+name: Kafka - Java Tests
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_call:
+    inputs:
+      SINK_CONNECTOR_IMAGE:
+        description: "Kafka connector docker image"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      SINK_CONNECTOR_IMAGE:
+        description: "Kafka connector docker image"
+        required: true
+        type: string
 
+env:
+  SINK_CONNECTOR_IMAGE: ${{ inputs.SINK_CONNECTOR_IMAGE }}
+        
 jobs:
-  build:
+  java-kafka:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

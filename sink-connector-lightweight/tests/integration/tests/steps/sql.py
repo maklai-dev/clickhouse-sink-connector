@@ -181,22 +181,19 @@ def create_mysql_to_clickhouse_replicated_table(
 @TestStep
 def create_tables(self, table_name, clickhouse_table_engine):
     """Create different types of replicated tables."""
-    table_name = table_name
 
     tables_list = [
-        table_name,
-        # table_name + "_primary_key_complex",
-        # table_name + "_no_engine_complex",
-        table_name + "_no_primary_key",
-        table_name + "_no_engine",
-        table_name + "_no_engine_no_primary_key",
+        f"{table_name}",
+        f"{table_name}_no_primary_key",
+        f"{table_name}_no_engine",
+        f"{table_name}_no_engine_no_primary_key",
     ]
 
     with Given(
         "I create MySQL to ClickHouse replicated table with primary key and with engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name,
+            name=f"{table_name}",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -206,7 +203,7 @@ def create_tables(self, table_name, clickhouse_table_engine):
         "I create MySQL to ClickHouse replicated table with complex primary key and with engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name + "_primary_key_complex",
+            name=f"{table_name}_primary_key_complex",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -217,7 +214,7 @@ def create_tables(self, table_name, clickhouse_table_engine):
         "I create MySQL to ClickHouse replicated table with complex primary key and without engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name + "_no_engine_complex",
+            name=f"{table_name}_no_engine_complex",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -229,7 +226,7 @@ def create_tables(self, table_name, clickhouse_table_engine):
         "I create MySQL to ClickHouse replicated table without primary key and with engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name + "_no_primary_key",
+            name=f"{table_name}_no_primary_key",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -240,7 +237,7 @@ def create_tables(self, table_name, clickhouse_table_engine):
         "I create MySQL to ClickHouse replicated table with primary key and without engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name + "_no_engine",
+            name=f"{table_name}_no_engine",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -251,7 +248,7 @@ def create_tables(self, table_name, clickhouse_table_engine):
         "I create MySQL to ClickHouse replicated table without primary key and without engine"
     ):
         create_mysql_to_clickhouse_replicated_table(
-            name=table_name + "_no_engine_no_primary_key",
+            name=f"{table_name}_no_engine_no_primary_key",
             mysql_columns="x INT NOT NULL",
             clickhouse_columns="x Int32",
             clickhouse_table_engine=clickhouse_table_engine,
@@ -287,7 +284,7 @@ def insert(
         f"I insert {first_insert_id - last_insert_id} rows of data in MySql table"
     ):
         for i in range(first_insert_id, last_insert_id + 1):
-            node.query(f"INSERT INTO {table_name} VALUES {insert_values}".format(x=i))
+            node.query(f"INSERT INTO `{table_name}` VALUES {insert_values}".format(x=i))
 
 
 @TestStep(When)
@@ -367,7 +364,11 @@ def select(
         manual_output = mysql_output
 
     if with_final:
-        retry(node.query, timeout=timeout, delay=10,)(
+        retry(
+            node.query,
+            timeout=timeout,
+            delay=10,
+        )(
             # f"SELECT {statement} FROM test.{table_name}  FINAL WHERE {sign_column} != -1 FORMAT CSV",
             f"SELECT {statement} FROM test.{table_name} FINAL",
             # f"SELECT {statement} FROM test.{table_name} FORMAT CSV",
@@ -385,7 +386,11 @@ def select(
                 )
 
     else:
-        retry(node.query, timeout=timeout, delay=10,)(
+        retry(
+            node.query,
+            timeout=timeout,
+            delay=10,
+        )(
             # f"SELECT {statement} FROM test.{table_name} where {sign_column} !=-1 FORMAT CSV",
             f"SELECT {statement} FROM test.{table_name} FORMAT CSV",
             message=f"{manual_output}",
@@ -558,7 +563,6 @@ def update(
             time.sleep(delay)
         return r
     else:
-
         with Given(
             f"I update {last_update_id - first_update_id} rows of data in MySql table"
         ):
@@ -602,17 +606,29 @@ def concurrent_queries(
         )
 
     with When("I start concurrently insert, update and delete queries in MySql table"):
-        By("inserting data in MySql table", test=insert, parallel=True,)(
+        By(
+            "inserting data in MySql table",
+            test=insert,
+            parallel=True,
+        )(
             first_insert_id=first_insert_id,
             last_insert_id=last_insert_id,
             table_name=table_name,
         )
-        By("deleting data in MySql table", test=delete, parallel=True,)(
+        By(
+            "deleting data in MySql table",
+            test=delete,
+            parallel=True,
+        )(
             first_delete_id=first_delete_id,
             last_delete_id=last_delete_id,
             table_name=table_name,
         )
-        By("updating data in MySql table", test=update, parallel=True,)(
+        By(
+            "updating data in MySql table",
+            test=update,
+            parallel=True,
+        )(
             first_update_id=first_update_id,
             last_update_id=last_update_id,
             table_name=table_name,

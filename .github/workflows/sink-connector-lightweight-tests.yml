@@ -1,13 +1,24 @@
-name: Sink Connector(Light-weight) Tests
+name: Lightweight - Java Tests
 
 on:
-  push:
-    branches: [ main, develop]
-  pull_request:
-    branches: [ main , develop]
+  workflow_call:
+    inputs:
+      SINK_CONNECTOR_IMAGE:
+        description: "Lightweight connector docker image"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      SINK_CONNECTOR_IMAGE:
+        description: "Lightweight connector docker image"
+        required: true
+        type: string
+
+env:
+  SINK_CONNECTOR_IMAGE: ${{ inputs.SINK_CONNECTOR_IMAGE }}
 
 jobs:
-  build:
+  java-lightweight:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
