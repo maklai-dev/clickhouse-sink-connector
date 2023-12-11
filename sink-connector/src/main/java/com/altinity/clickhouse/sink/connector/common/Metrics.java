@@ -125,7 +125,7 @@ public class Metrics {
             }
         }
         if(metricsPort != null) {
-            log.info("METRICS server started, Port: "+ metricsPort);
+            log.info("METRICS server port: "+ metricsPort);
             try {
                 port = Integer.parseInt(metricsPort);
             } catch(NumberFormatException ne) {
@@ -189,6 +189,8 @@ public class Metrics {
 
 
         try {
+            log.info("METRICS server starting, port: " + port);
+
             server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/metrics", httpExchange -> {
                 String response = prometheusMeterRegistry.scrape();
