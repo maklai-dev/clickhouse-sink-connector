@@ -257,6 +257,7 @@ public class DbWriterTest {
         String userName = "root";
         String password = "root";
         String tableName = "employees";
+        String clusterName = null;
 
         String connectionUrl = writer.getConnectionString(hostName, port, database);
         Properties properties = new Properties();
@@ -269,7 +270,7 @@ public class DbWriterTest {
 
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, userName, password, config, null);
+        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, clusterName, userName, password, config, null);
         ClickHouseDataType dt1 = dbWriter.getClickHouseDataType("Min_Date", colNameToDataTypeMap);
         Assert.assertTrue(dt1 == ClickHouseDataType.Date);
 
