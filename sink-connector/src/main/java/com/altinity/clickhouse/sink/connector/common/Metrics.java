@@ -91,7 +91,12 @@ public class Metrics {
 //            registry.register("memory", new MemoryUsageGaugeSet());
 //            registry.register("jvm.thread-states",new ThreadStatesGaugeSet());
 //            registry.register("jvm.garbage-collector",new GarbageCollectorMetricSet());
+
+        log.info("METRICS init port: " + metricsPort);
+
         parseConfiguration(enableFlag, metricsPort);
+
+        log.info("METRICS init port2: " + port);
 
         if(enableMetrics) {
 
