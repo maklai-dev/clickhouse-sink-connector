@@ -81,13 +81,15 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
         //createTableSyntax.deleteCharAt(createTableSyntax.lastIndexOf(","));
 
         // Append sign and version columns
-        createTableSyntax.append("`").append(SIGN_COLUMN).append("` ").append(SIGN_COLUMN_DATA_TYPE).append(",");
+        createTableSyntax.append("`").append(IS_DELETED_COLUMN).append("` ").append(IS_DELETED_COLUMN_DATA_TYPE).append(",");
         createTableSyntax.append("`").append(VERSION_COLUMN).append("` ").append(VERSION_COLUMN_DATA_TYPE);
 
         createTableSyntax.append(")");
         createTableSyntax.append(" ");
         createTableSyntax.append("ENGINE = ");
-        createTableSyntax.append(clusterName != null ? "Replicated" : "").append("ReplacingMergeTree(").append(VERSION_COLUMN).append(")");
+        createTableSyntax.append(clusterName != null ? "Replicated" : "").append("ReplacingMergeTree(");
+        createTableSyntax.append(VERSION_COLUMN).append(",").append(IS_DELETED_COLUMN);
+        createTableSyntax.append(")");
         createTableSyntax.append(" ");
 
         if(primaryKey != null && isPrimaryKeyColumnPresent(primaryKey, columnToDataTypesMap)) {
