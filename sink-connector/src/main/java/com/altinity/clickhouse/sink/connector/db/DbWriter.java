@@ -139,7 +139,9 @@ public class DbWriter extends BaseDbWriter {
             }
 
             if (this.engine != null && this.engine.getEngine().equalsIgnoreCase(DBMetadata.TABLE_ENGINE.REPLACING_MERGE_TREE.getEngine())) {
+                log.info("DEBUGCOL0: " + this.engine.getEngine());
                 String rmtColumns = response.getRight();
+                log.info("DEBUGCOL: " + rmtColumns);
                 if(rmtColumns != null && rmtColumns.contains(",")) {
                     // New RMT, with version and deleted column.
                     String[] rmtColumnArray = rmtColumns.split(",");
@@ -150,6 +152,8 @@ public class DbWriter extends BaseDbWriter {
                     this.versionColumn = response.getRight();
                     this.replacingMergeTreeDeleteColumn = this.config.getString(ClickHouseSinkConnectorConfigVariables.REPLACING_MERGE_TREE_DELETE_COLUMN.toString());
                 }
+
+                log.info("DEBUGCOL2: " + this.replacingMergeTreeDeleteColumn);
 
             } else if (this.engine != null && this.engine.getEngine().equalsIgnoreCase(com.altinity.clickhouse.sink.connector.db.DBMetadata.TABLE_ENGINE.COLLAPSING_MERGE_TREE.getEngine())) {
                 this.signColumn = response.getRight();
@@ -700,9 +704,11 @@ public class DbWriter extends BaseDbWriter {
                 }
             }
             // Sign column to mark deletes in ReplacingMergeTree
+            log.info("DEBUGCOL3: " + this.replacingMergeTreeDeleteColumn);
             if(this.replacingMergeTreeDeleteColumn != null && this.columnNameToDataTypeMap.containsKey(replacingMergeTreeDeleteColumn)) {
                 if(columnNameToIndexMap.containsKey(replacingMergeTreeDeleteColumn) &&
                         this.config.getBoolean(ClickHouseSinkConnectorConfigVariables.IGNORE_DELETE.toString()) == false) {
+                    log.info("DEBUGCOL4: here1");
                     if (record.getCdcOperation().getOperation().equalsIgnoreCase(ClickHouseConverter.CDC_OPERATION.DELETE.getOperation())) {
                         if(replacingMergeTreeWithIsDeletedColumn)
                             ps.setInt(columnNameToIndexMap.get(replacingMergeTreeDeleteColumn), 1);
