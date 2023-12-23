@@ -16,6 +16,7 @@ import com.altinity.clickhouse.sink.connector.model.ClickHouseStruct;
 import com.altinity.clickhouse.sink.connector.model.KafkaMetaData;
 import com.clickhouse.data.ClickHouseColumn;
 import com.clickhouse.data.ClickHouseDataType;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Field;
@@ -36,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Class that abstracts all functionality
@@ -424,9 +426,7 @@ public class DbWriter extends BaseDbWriter {
      * @param queryToRecordsMap
      */
     public BlockMetaData addToPreparedStatementBatch(String topicName, Map<MutablePair<String, Map<String, Integer>>,
-            List<ClickHouseStruct>> queryToRecordsMap, BlockMetaData bmd) throws SQLException {
-
-        boolean success = false;
+            List<ClickHouseStruct>> queryToRecordsMap, BlockMetaData bmd) throws Exception {
 
         Iterator<Map.Entry<MutablePair<String, Map<String, Integer>>, List<ClickHouseStruct>>> iter = queryToRecordsMap.entrySet().iterator();
         while(iter.hasNext()) {
@@ -436,28 +436,50 @@ public class DbWriter extends BaseDbWriter {
             // Create Hashmap of PreparedStatement(Query) -> Set of records
             // because the data will contain a mix of SQL statements(multiple columns)
 
+            executePreparedStatement(insertQuery, topicName, entry, bmd);
+            if(entry.getValue().isEmpty()) {
+                // All records were processed.
+                iter.remove();
+            }
+            Metrics.updateCounters(topicName, entry.getValue().size());
+
+        }
+
+        return bmd;
+    }
+
+    private void executePreparedStatement(String insertQuery, String topicName,
+                                             Map.Entry<MutablePair<String, Map<String, Integer>>, List<ClickHouseStruct>> entry,
+                                             BlockMetaData bmd) {
+
+        long maxRecordsInBatch = this.config.getLong(ClickHouseSinkConnectorConfigVariables.BUFFER_MAX_RECORDS.toString());
+        List<ClickHouseStruct> failedRecords = new ArrayList<>();
+
+        // Split the records into batches.
+        Lists.partition(entry.getValue(), (int)maxRecordsInBatch).forEach(batch -> {
+
             ArrayList<ClickHouseStruct> truncatedRecords = new ArrayList<>();
             try (PreparedStatement ps = this.conn.prepareStatement(insertQuery)) {
 
-                List<ClickHouseStruct> recordsList = entry.getValue();
-                for (ClickHouseStruct record : recordsList) {
+                //List<ClickHouseStruct> recordsList = entry.getValue();
+                for (ClickHouseStruct record : batch) {
                     try {
                         bmd.update(record);
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         log.error("**** ERROR: updating Prometheus", e);
                     }
 
-                    if(record.getCdcOperation().getOperation().equalsIgnoreCase(ClickHouseConverter.CDC_OPERATION.TRUNCATE.getOperation())) {
+                    if (record.getCdcOperation().getOperation().equalsIgnoreCase(ClickHouseConverter.CDC_OPERATION.TRUNCATE.getOperation())) {
                         truncatedRecords.add(record);
                         continue;
                     }
 
-                    if(CdcRecordState.CDC_RECORD_STATE_BEFORE == getCdcSectionBasedOnOperation(record.getCdcOperation())) {
+                    if (CdcRecordState.CDC_RECORD_STATE_BEFORE == getCdcSectionBasedOnOperation(record.getCdcOperation())) {
                         insertPreparedStatement(entry.getKey().right, ps, record.getBeforeModifiedFields(), record, record.getBeforeStruct(), true);
-                    } else if(CdcRecordState.CDC_RECORD_STATE_AFTER == getCdcSectionBasedOnOperation(record.getCdcOperation())) {
+                    } else if (CdcRecordState.CDC_RECORD_STATE_AFTER == getCdcSectionBasedOnOperation(record.getCdcOperation())) {
                         insertPreparedStatement(entry.getKey().right, ps, record.getAfterModifiedFields(), record, record.getAfterStruct(), false);
-                    } else if(CdcRecordState.CDC_RECORD_STATE_BOTH == getCdcSectionBasedOnOperation(record.getCdcOperation()))  {
-                        if(this.engine != null && this.engine.getEngine().equalsIgnoreCase(DBMetadata.TABLE_ENGINE.COLLAPSING_MERGE_TREE.getEngine())) {
+                    } else if (CdcRecordState.CDC_RECORD_STATE_BOTH == getCdcSectionBasedOnOperation(record.getCdcOperation())) {
+                        if (this.engine != null && this.engine.getEngine().equalsIgnoreCase(DBMetadata.TABLE_ENGINE.COLLAPSING_MERGE_TREE.getEngine())) {
                             insertPreparedStatement(entry.getKey().right, ps, record.getBeforeModifiedFields(), record, record.getBeforeStruct(), true);
                         }
                         insertPreparedStatement(entry.getKey().right, ps, record.getAfterModifiedFields(), record, record.getAfterStruct(), false);
@@ -468,51 +490,47 @@ public class DbWriter extends BaseDbWriter {
                     ps.addBatch();
                 }
 
-
-                // Issue the composed query: insert into mytable values(...)(...)...(...)
-                // ToDo: The result of greater than or equal to zero means
-                // the records were processed successfully.
-                // but if any of the records were not processed successfully
-                // How to we rollback or what action needs to be taken.
                 int[] result = ps.executeBatch();
-                success = true;
 
                 long taskId = this.config.getLong(ClickHouseSinkConnectorConfigVariables.TASK_ID.toString());
-                log.info("*************** EXECUTED BATCH Successfully " + "Records: " + recordsList.size() + "************** task(" + taskId + ")"  + " Thread ID: " + Thread.currentThread().getName());
-
-                // ToDo: Clear is not an atomic operation.
-                //  It might delete the records that are inserted by the ingestion process.
+                log.info("*************** EXECUTED BATCH Successfully " + "Records: " + batch.size() + "************** task(" + taskId + ")" + " Thread ID: " + Thread.currentThread().getName());
 
             } catch (Exception e) {
                 Metrics.updateErrorCounters(topicName, entry.getValue().size());
                 log.error("******* ERROR inserting Batch *****************", e);
-                success = false;
+                failedRecords.addAll(batch);
             }
+            if (!truncatedRecords.isEmpty()) {
+                PreparedStatement ps = null;
+                try {
+                    String query = null;
+                    
+                    if(this.clusterName != null) {
+                        query = String.format("TRUNCATE TABLE %s ON CLUSTER '%s'", this.tableName, this.clusterName);
+                    } else {
+                        query = String.format("TRUNCATE TABLE %s", this.tableName);
+                    }
 
-            if(!truncatedRecords.isEmpty()) {
-                String query = null;
-
-                if(this.clusterName != null)
-                {
-                    query = String.format("TRUNCATE TABLE %s ON CLUSTER '%s'", this.tableName, this.clusterName);
-                } else {
-                    query = String.format("TRUNCATE TABLE %s", this.tableName);
+                    ps = this.conn.prepareStatement(query);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
-
-                PreparedStatement ps = this.conn.prepareStatement(query);
-                ps.execute();
-
-                //this.conn.commit();
+                try {
+                    ps.execute();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
-            Metrics.updateCounters(topicName, entry.getValue().size());
+        });
 
-            if(success) {
-                iter.remove();
-            }
+        // Remove all records from batch if succeeded.
+        if(failedRecords.isEmpty()) {
+            entry.getValue().clear();
+        } else {
+            entry.getValue().clear();
+            entry.getValue().addAll(failedRecords);
         }
-
-        return bmd;
     }
 
     /**

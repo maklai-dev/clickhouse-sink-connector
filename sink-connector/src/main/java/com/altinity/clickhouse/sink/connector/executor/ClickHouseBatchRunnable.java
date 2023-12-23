@@ -94,6 +94,8 @@ public class ClickHouseBatchRunnable implements Runnable {
             if (numRecords <= 0) {
                 //log.debug(String.format("No records to process ThreadId(%s), TaskId(%s)", Thread.currentThread().getId(), taskId));
                 return;
+            } else {
+                log.debug("**** Processing Batch of Records ****" + numRecords);
             }
 
             // Topic Name -> List of records
@@ -142,7 +144,7 @@ public class ClickHouseBatchRunnable implements Runnable {
      * @param topicName
      * @param records
      */
-    private void processRecordsByTopic(String topicName, ConcurrentLinkedQueue<ClickHouseStruct> records) throws SQLException {
+    private void processRecordsByTopic(String topicName, ConcurrentLinkedQueue<ClickHouseStruct> records) throws Exception {
 
         //The user parameter will override the topic mapping to table.
         String tableName = getTableFromTopic(topicName);
@@ -167,7 +169,8 @@ public class ClickHouseBatchRunnable implements Runnable {
         Map<TopicPartition, Long> partitionToOffsetMap = writer.groupQueryWithRecords(records, queryToRecordsMap);
         BlockMetaData bmd = new BlockMetaData();
 
-        if(flushRecordsToClickHouse(topicName, writer, queryToRecordsMap, bmd)) {
+        long maxBufferSize = this.config.getLong(ClickHouseSinkConnectorConfigVariables.BUFFER_MAX_RECORDS.toString());
+        if(flushRecordsToClickHouse(topicName, writer, queryToRecordsMap, bmd, maxBufferSize)) {
             // Remove the entry.
             queryToRecordsMap.remove(topicName);
         }
@@ -192,7 +195,7 @@ public class ClickHouseBatchRunnable implements Runnable {
      * @return
      */
     private boolean flushRecordsToClickHouse(String topicName, DbWriter writer, Map<MutablePair<String, Map<String, Integer>>,
-            List<ClickHouseStruct>> queryToRecordsMap, BlockMetaData bmd) throws SQLException {
+            List<ClickHouseStruct>> queryToRecordsMap, BlockMetaData bmd, long maxBufferSize) throws Exception {
 
         boolean result = false;
 
