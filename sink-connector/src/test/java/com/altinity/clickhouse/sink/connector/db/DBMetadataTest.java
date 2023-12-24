@@ -50,10 +50,22 @@ public class DBMetadataTest {
     public void testGetVersionColumnForReplacingMergeTree() {
         DBMetadata metadata = new DBMetadata();
 
-        String createTableDML = "ReplacingMergeTree(versionNo) PRIMARY KEY productCode ORDER BY productCode SETTINGS index_granularity = 8192";
+        String createTableDML = "ReplacingMergeTree(versionNo,deleted) PRIMARY KEY productCode ORDER BY productCode SETTINGS index_granularity = 8192";
         String signColumn = metadata.getVersionColumnForReplacingMergeTree(createTableDML);
 
-        Assert.assertTrue(signColumn.equalsIgnoreCase("versionNo"));
+        Assert.assertTrue(signColumn.equalsIgnoreCase("versionNo,deleted"));
+
+
+        String createTableDML2 = "ReplicatedReplacingMergeTree('/clickhouse/tables/{uuid}/{shard}', '{replica}', _version, is_deleted) PRIMARY KEY ID ORDER BY ID SETTINGS index_granularity = 8192";
+        String signColumn2 = metadata.getVersionColumnForReplacingMergeTree(createTableDML2);
+
+        Assert.assertTrue(signColumn2.equalsIgnoreCase("_version,is_deleted"));
+
+
+        String createTableDML3 = "ReplicatedReplacingMergeTree('/clickhouse/tables/{uuid}/{shard}', '{replica}', _version) PRIMARY KEY ID ORDER BY ID SETTINGS index_granularity = 8192";
+        String signColumn3 = metadata.getVersionColumnForReplacingMergeTree(createTableDML3);
+
+        Assert.assertTrue(signColumn3.equalsIgnoreCase("_version"));
 
     }
 

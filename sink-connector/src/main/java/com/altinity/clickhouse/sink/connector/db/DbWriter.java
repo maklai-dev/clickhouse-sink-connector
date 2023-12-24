@@ -154,6 +154,7 @@ public class DbWriter extends BaseDbWriter {
                 }
 
                 log.info("DEBUGCOL2: " + this.replacingMergeTreeDeleteColumn);
+                log.info("DEBUGCOL21: " + replacingMergeTreeWithIsDeletedColumn);
 
             } else if (this.engine != null && this.engine.getEngine().equalsIgnoreCase(com.altinity.clickhouse.sink.connector.db.DBMetadata.TABLE_ENGINE.COLLAPSING_MERGE_TREE.getEngine())) {
                 this.signColumn = response.getRight();

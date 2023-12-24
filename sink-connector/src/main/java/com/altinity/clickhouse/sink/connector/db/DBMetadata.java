@@ -170,6 +170,10 @@ public class DBMetadata {
                 String[] parameterArray = parameters.split(",");
                 if(parameterArray != null && parameterArray.length >= 3) {
                     versionColumn = parameterArray[2].trim();
+                    if(parameterArray.length > 3) {
+                        versionColumn += ",";
+                        versionColumn += parameterArray[3].trim();
+                    }
                 }
             }
         }
