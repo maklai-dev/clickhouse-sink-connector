@@ -104,7 +104,8 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
             // ToDO:
             createTableSyntax.append(ORDER_BY_TUPLE);
         }
-       return createTableSyntax.toString();
+        createTableSyntax.append(" SETTINGS clean_deleted_rows='Always'");
+        return createTableSyntax.toString();
     }
 
     @VisibleForTesting

@@ -133,7 +133,7 @@ public class ClickHouseAutoCreateTableTest {
 
         String query = act.createTableSyntax(primaryKeys, "auto_create_table", null, createFields(), this.columnToDataTypesMap);
         // System.out.println("QUERY: " + query);
-        Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY(customerName)"));
+        Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY(customerName) SETTINGS clean_deleted_rows='Always'"));
         //Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY (customerName)"));
     }
 
@@ -146,7 +146,7 @@ public class ClickHouseAutoCreateTableTest {
 
         String query = act.createTableSyntax(primaryKeys, "auto_create_table", "{cluster}", createFields(), this.columnToDataTypesMap);
         // System.out.println("QUERY: " + query);
-        Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table ON CLUSTER '{cluster}' (`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplicatedReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY(customerName)"));
+        Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table ON CLUSTER '{cluster}' (`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplicatedReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY(customerName) SETTINGS clean_deleted_rows='Always'"));
         //Assert.assertTrue(query.equalsIgnoreCase("CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) PRIMARY KEY(customerName) ORDER BY (customerName)"));
     }
 
@@ -158,7 +158,7 @@ public class ClickHouseAutoCreateTableTest {
 
         String query = act.createTableSyntax(null, "auto_create_table", null, createFields(), this.columnToDataTypesMap);
 
-        String expectedQuery = "CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()";
+        String expectedQuery = "CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) ORDER BY tuple() SETTINGS clean_deleted_rows='Always'";
         Assert.assertTrue(query.equalsIgnoreCase(expectedQuery));
     }
     @Test
@@ -171,7 +171,7 @@ public class ClickHouseAutoCreateTableTest {
 
         String query = act.createTableSyntax(primaryKeys, "auto_create_table", null, createFields(), this.columnToDataTypesMap);
 
-        String expectedQuery = "CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()";
+        String expectedQuery = "CREATE TABLE auto_create_table(`customerName` String NOT NULL,`occupation` String NOT NULL,`quantity` Int32 NOT NULL,`amount_1` Float32 NOT NULL,`amount` Float64 NOT NULL,`employed` Bool NOT NULL,`blob_storage` String NOT NULL,`blob_storage_scale` Decimal NOT NULL,`json_output` JSON,`max_amount` Float64 NOT NULL,`is_deleted` UInt8,`_version` UInt64) ENGINE = ReplacingMergeTree(_version,is_deleted) ORDER BY tuple() SETTINGS clean_deleted_rows='Always'";
         Assert.assertTrue(query.equalsIgnoreCase(expectedQuery));
         // System.out.println(query);
     }
