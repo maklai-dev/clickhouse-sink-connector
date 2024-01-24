@@ -43,13 +43,14 @@ public class ClickHouseAutoCreateTable extends ClickHouseTableOperationsBase{
 
         StringBuilder createTableSyntax = new StringBuilder();
 
-        createTableSyntax.append(CREATE_TABLE).append(" ").append(tableName);
+        createTableSyntax.append(CREATE_TABLE).append(" ").append("`").append(tableName).append("`");
 
         if (clusterName != null) {
             createTableSyntax.append(" ON CLUSTER '").append(clusterName).append("' ");
         }
         
         createTableSyntax.append("(");
+
 
         for(Field f: fields) {
             String colName = f.name();

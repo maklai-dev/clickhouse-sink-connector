@@ -581,6 +581,26 @@ public class MySqlDDLParserListenerImplTest {
         Assert.assertTrue(clickHouseQuery.toString().equalsIgnoreCase("RENAME TABLE test_table to test_table_new"));
     }
 
+    @Test
+    public void testGeneratedColumn() {
+        StringBuffer clickHouseQuery = new StringBuffer();
+
+        String sql = "CREATE TABLE employees.contacts (fullname varchar(101) GENERATED ALWAYS AS (CONCAT(first_name,' ',last_name)), email VARCHAR(100) NOT NULL);";
+        mySQLDDLParserService.parseSql(sql, "", clickHouseQuery);
+
+        Assert.assertTrue(clickHouseQuery.toString().equalsIgnoreCase("CREATE TABLE employees.contacts(fullname Nullable(String) ALIAS CONCAT(first_name,' ',last_name),email String NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()"));
+    }
+
+    @Test
+    public void testSourceWithIsDeletedColumn() {
+        StringBuffer clickHouseQuery = new StringBuffer();
+
+        String sql = "create table new_table(col1 varchar(255), col2 int, is_deleted int, _sign int);";
+        mySQLDDLParserService.parseSql(sql, "", clickHouseQuery);
+
+        Assert.assertTrue(clickHouseQuery.toString().equalsIgnoreCase("CREATE TABLE new_table(col1 Nullable(String),col2 Nullable(Int32),is_deleted Nullable(Int32),_sign Nullable(Int32),`_version` UInt64,`__is_deleted` UInt8) Engine=ReplacingMergeTree(_version,__is_deleted) ORDER BY tuple()"));
+    }
+
     @ParameterizedTest
     @CsvSource({
             "ALTER TABLE test_table rename to test_table_new, false",
@@ -598,6 +618,25 @@ public class MySqlDDLParserListenerImplTest {
         AtomicBoolean isDropOrTruncate = new AtomicBoolean();
         mySQLDDLParserService.parseSql(sql, "", clickHouseQuery, isDropOrTruncate);
         Assert.assertTrue(isDropOrTruncate.get() == expectedResult);
+
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            value = {"CREATE TABLE temporal_types_TIMESTAMP1(`Mid_Value` timestamp(1) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP1(`Mid_Value` DateTime64(1, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()",
+            "CREATE TABLE temporal_types_TIMESTAMP2(`Mid_Value` timestamp(2) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP2(`Mid_Value` DateTime64(2, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()",
+            "CREATE TABLE temporal_types_TIMESTAMP3(`Mid_Value` timestamp(3) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP3(`Mid_Value` DateTime64(3, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()",
+            "CREATE TABLE temporal_types_TIMESTAMP4(`Mid_Value` timestamp(4) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP4(`Mid_Value` DateTime64(4, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()",
+            "CREATE TABLE temporal_types_TIMESTAMP5(`Mid_Value` timestamp(5) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP5(`Mid_Value` DateTime64(5, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()",
+            "CREATE TABLE temporal_types_TIMESTAMP6(`Mid_Value` timestamp(6) NOT NULL) ENGINE=InnoDB;: CREATE TABLE temporal_types_TIMESTAMP6(`Mid_Value` DateTime64(6, 0) NOT NULL ,`_version` UInt64,`is_deleted` UInt8) Engine=ReplacingMergeTree(_version,is_deleted) ORDER BY tuple()"}
+    ,delimiter = ':')
+    @DisplayName("Test to validate if the timestamp data type precision is maintained from MySQL to ClickHouse")
+    public void checkIfTimestampDataTypePrecisionIsMaintained(String sql, String expectedResult) {
+        StringBuffer clickHouseQuery = new StringBuffer();
+
+        AtomicBoolean isDropOrTruncate = new AtomicBoolean();
+        mySQLDDLParserService.parseSql(sql, "", clickHouseQuery, isDropOrTruncate);
+        Assert.assertTrue(clickHouseQuery.toString().equalsIgnoreCase(expectedResult));
 
     }
 
