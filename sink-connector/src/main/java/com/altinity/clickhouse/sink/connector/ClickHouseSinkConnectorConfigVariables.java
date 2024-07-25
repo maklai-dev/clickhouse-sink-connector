@@ -16,8 +16,6 @@ public enum ClickHouseSinkConnectorConfigVariables {
     CLICKHOUSE_PASS("clickhouse.server.password"),
     CLICKHOUSE_PORT("clickhouse.server.port"),
 
-    CLICKHOUSE_CLUSTER("clickhouse.cluster"),
-
     PROVIDER_CONFIG( "provider"),
     TASK_ID("task_id"),
 
