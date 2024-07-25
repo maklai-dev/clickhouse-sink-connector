@@ -24,9 +24,4 @@ public class DBCredentials {
     @Getter
     @Setter
     private String password;
-
-    @Getter
-    @Setter
-    private String clusterName;
-
 }

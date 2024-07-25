@@ -4,6 +4,7 @@ import com.altinity.clickhouse.debezium.embedded.cdc.DebeziumChangeEventCapture;
 import com.altinity.clickhouse.debezium.embedded.parser.SourceRecordParserService;
 import com.altinity.clickhouse.sink.connector.ClickHouseSinkConnectorConfig;
 import com.altinity.clickhouse.sink.connector.db.BaseDbWriter;
+import com.clickhouse.jdbc.ClickHouseConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ public class EmployeesDBIT extends DDLBaseIT {
         @BeforeEach
         @Override
         public void startContainers() throws InterruptedException {
-            mySqlContainer = new MySQLContainer<>(DockerImageName.parse("docker.io/bitnami/mysql:latest")
+            mySqlContainer = new MySQLContainer<>(DockerImageName.parse("docker.io/bitnami/mysql:8.0.36")
                     .asCompatibleSubstituteFor("mysql"))
                     .withDatabaseName("employees").withUsername("root").withPassword("adminpass")
                     .withInitScript("employees.sql")
@@ -62,7 +63,8 @@ public class EmployeesDBIT extends DDLBaseIT {
                 try {
                     engine.set(new DebeziumChangeEventCapture());
                     engine.get().setup(getDebeziumProperties(), new SourceRecordParserService(),
-                            new MySQLDDLParserService(new ClickHouseSinkConnectorConfig(new HashMap<>())), false);
+                            new MySQLDDLParserService(new ClickHouseSinkConnectorConfig(new HashMap<>()),
+                                    "employees"), false);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -76,9 +78,10 @@ public class EmployeesDBIT extends DDLBaseIT {
 
             Thread.sleep(40000);
 
-
+            String jdbcUrl = BaseDbWriter.getConnectionString(clickHouseContainer.getHost(), clickHouseContainer.getFirstMappedPort(), "employees");
+            ClickHouseConnection connection = BaseDbWriter.createConnection(jdbcUrl, "client_1", clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), new ClickHouseSinkConnectorConfig(new HashMap<>()));
             BaseDbWriter writer = new BaseDbWriter(clickHouseContainer.getHost(), clickHouseContainer.getFirstMappedPort(),
-                    "employees", clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), null);
+                    "employees", clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), null, connection);
 
 
             // Validate that all the tables are created.

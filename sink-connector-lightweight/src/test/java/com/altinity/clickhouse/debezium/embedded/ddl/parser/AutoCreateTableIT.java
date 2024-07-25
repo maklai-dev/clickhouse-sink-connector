@@ -5,6 +5,7 @@ import com.altinity.clickhouse.debezium.embedded.cdc.DebeziumChangeEventCapture;
 import com.altinity.clickhouse.debezium.embedded.parser.SourceRecordParserService;
 import com.altinity.clickhouse.sink.connector.ClickHouseSinkConnectorConfig;
 import com.altinity.clickhouse.sink.connector.db.BaseDbWriter;
+import com.clickhouse.jdbc.ClickHouseConnection;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,7 @@ public class AutoCreateTableIT {
 
     @BeforeEach
     public void startContainers() throws InterruptedException {
-        mySqlContainer = new MySQLContainer<>(DockerImageName.parse("docker.io/bitnami/mysql:latest")
+        mySqlContainer = new MySQLContainer<>(DockerImageName.parse("docker.io/bitnami/mysql:8.0.36")
                 .asCompatibleSubstituteFor("mysql"))
                 .withDatabaseName("employees").withUsername("root").withPassword("adminpass")
               //  .withInitScript("data_types.sql")
@@ -68,7 +69,7 @@ public class AutoCreateTableIT {
         Connection conn = ITCommon.connectToMySQL(mySqlContainer);
         conn.prepareStatement("create table `new-table`(col1 varchar(255), col2 int, col3 int)").execute();
 
-        Thread.sleep(10000);
+        Thread.sleep(20000);
 
 
         AtomicReference<DebeziumChangeEventCapture> engine = new AtomicReference<>();
@@ -77,23 +78,30 @@ public class AutoCreateTableIT {
             try {
 
                 engine.set(new DebeziumChangeEventCapture());
-                engine.get().setup(ITCommon.getDebeziumPropertiesForSchemaOnly(mySqlContainer, clickHouseContainer), new SourceRecordParserService(),
-                        new MySQLDDLParserService(new ClickHouseSinkConnectorConfig(new HashMap<>())),false);
+                engine.get().setup(ITCommon.getDebeziumProperties(mySqlContainer, clickHouseContainer), new SourceRecordParserService(),
+                        new MySQLDDLParserService(new ClickHouseSinkConnectorConfig(new HashMap<>()),
+                                "employees"),false);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
 
-        Thread.sleep(10000);
+        Thread.sleep(30000);
         conn.prepareStatement("insert into `new-table` values('test', 1, 2)").execute();
         conn.close();
 
         Thread.sleep(10000);
 
-        BaseDbWriter writer = new BaseDbWriter(clickHouseContainer.getHost(), clickHouseContainer.getFirstMappedPort(),
-                "employees", clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), null);
+        String jdbcUrl = BaseDbWriter.getConnectionString(clickHouseContainer.getHost(), clickHouseContainer.getFirstMappedPort(),
+                "employees");
+        ClickHouseConnection chConn = BaseDbWriter.createConnection(jdbcUrl, "Client_1",
+                clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), new ClickHouseSinkConnectorConfig(new HashMap<>()));
 
-            ResultSet dateTimeResult = writer.executeQueryWithResultSet("select count(*) from `new-table`");
+        BaseDbWriter writer = new BaseDbWriter(clickHouseContainer.getHost(), clickHouseContainer.getFirstMappedPort(),
+                "employees", clickHouseContainer.getUsername(), clickHouseContainer.getPassword(), null, chConn);
+
+        Thread.sleep(10000);
+        ResultSet dateTimeResult = writer.executeQueryWithResultSet("select count(*) from `new-table`");
         boolean resultReceived = false;
 
         while(dateTimeResult.next()) {

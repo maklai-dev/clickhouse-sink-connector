@@ -4,19 +4,21 @@ import static com.altinity.clickhouse.sink.connector.db.ClickHouseDbConstants.CH
 import com.clickhouse.jdbc.ClickHouseConnection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class DBMetadata {
 
-    private static final Logger log = LoggerFactory.getLogger(DBMetadata.class);
+    private static final Logger log = LogManager.getLogger(DBMetadata.class);
 
 
     public enum TABLE_ENGINE {
@@ -105,7 +107,7 @@ public class DBMetadata {
                 return new MutablePair<>(null, null);
             }
             try(Statement stmt = conn.createStatement()) {
-                String showSchemaQuery = String.format("show create table %s.%s", databaseName, tableName);
+                String showSchemaQuery = String.format("show create table %s.`%s`", databaseName, tableName);
                 ResultSet rs = stmt.executeQuery(showSchemaQuery);
                 if(rs != null && rs.next()) {
                     String response =  rs.getString(1);
@@ -123,10 +125,10 @@ public class DBMetadata {
                 }
                 rs.close();
                 stmt.close();
-                log.info("ResultSet" + rs);
+                log.info("getTableEngineUsingShowTable ResultSet" + rs);
             }
         } catch(Exception e) {
-            log.error("getTableEngineUsingShowTable exception", e);
+            log.info("getTableEngineUsingShowTable exception", e);
         }
 
         return result;
@@ -168,12 +170,10 @@ public class DBMetadata {
             String parameters = StringUtils.substringBetween(createDML, REPLICATED_REPLACING_MERGE_TREE_VER_PREFIX, ")");
             if(parameters != null) {
                 String[] parameterArray = parameters.split(",");
-                if(parameterArray != null && parameterArray.length >= 3) {
+                if(parameterArray != null && parameterArray.length == 3) {
                     versionColumn = parameterArray[2].trim();
-                    if(parameterArray.length > 3) {
-                        versionColumn += ",";
-                        versionColumn += parameterArray[3].trim();
-                    }
+                } else if(parameterArray != null && parameterArray.length == 4) {
+                    versionColumn = parameterArray[2].trim() + "," + parameterArray[3].trim();
                 }
             }
         }
@@ -213,13 +213,15 @@ public class DBMetadata {
                 if(rs.wasNull() == false && rs.next()) {
                     String response =  rs.getString(1);
                     result = getEngineFromResponse(response);
+                } else {
+                    log.debug("Error: Table not found in system tables:" + tableName + " Database:" + database);
                 }
                 rs.close();
                 stmt.close();
-                log.info("ResultSet" + rs);
+                log.info("getTableEngineUsingSystemTables ResultSet" + rs);
             }
         } catch(Exception e) {
-            log.error("getTableEngineUsingSystemTables exception", e);
+            log.debug("getTableEngineUsingSystemTables exception", e);
         }
 
         return result;
@@ -231,12 +233,17 @@ public class DBMetadata {
         if(response.contains(TABLE_ENGINE.COLLAPSING_MERGE_TREE.engine)) {
             result.left = TABLE_ENGINE.COLLAPSING_MERGE_TREE;
             result.right = getSignColumnForCollapsingMergeTree(response);
-        } else if(response.contains(TABLE_ENGINE.REPLACING_MERGE_TREE.engine)) {
+        }
+        else if(response.contains(TABLE_ENGINE.REPLICATED_REPLACING_MERGE_TREE.engine)) {
+            result.left = TABLE_ENGINE.REPLICATED_REPLACING_MERGE_TREE;
+            result.right = getVersionColumnForReplacingMergeTree(response);
+        }
+        else if(response.contains(TABLE_ENGINE.REPLACING_MERGE_TREE.engine)) {
             result.left = TABLE_ENGINE.REPLACING_MERGE_TREE;
             result.right = getVersionColumnForReplacingMergeTree(response);
         } else if(response.contains(TABLE_ENGINE.MERGE_TREE.engine)) {
             result.left = TABLE_ENGINE.MERGE_TREE;
-        } else {
+        }  else {
             result.left = TABLE_ENGINE.DEFAULT;
         }
 
@@ -265,6 +272,49 @@ public class DBMetadata {
     }
 
 
+
+
+    /**
+     * Function that uses the DatabaseMetaData JDBC functionality
+     * to get the column name and column data type as key/value pair.
+     */
+    public Map<String, String> getColumnsDataTypesForTable(String tableName,
+                                                           ClickHouseConnection conn,
+                                                           String database) {
+
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        try {
+            if (conn == null) {
+                log.error("Error with DB connection");
+                return result;
+            }
+
+            ResultSet columns = conn.getMetaData().getColumns(database, null,
+                    tableName, null);
+            while (columns.next()) {
+                String columnName = columns.getString("COLUMN_NAME");
+                String typeName = columns.getString("TYPE_NAME");
+
+                String isGeneratedColumn = columns.getString("IS_GENERATEDCOLUMN");
+                String columnDefinition = columns.getString("COLUMN_DEF");
+                String sqlDataType = columns.getString("SQL_DATA_TYPE");
+                String dataType = columns.getString("DATA_TYPE");
+               // String typeName = columns.getString("TYPE_NAME");
+//                String columnSize = columns.getString("COLUMN_SIZE");
+//                String isNullable = columns.getString("IS_NULLABLE");
+//                String isAutoIncrement = columns.getString("IS_AUTOINCREMENT");
+
+                // Skip generated columns.
+                if(isGeneratedColumn != null && isGeneratedColumn.equalsIgnoreCase("YES")) {
+                    continue;
+                }
+                result.put(columnName, typeName);
+            }
+        } catch (SQLException sq) {
+            log.error("Exception retrieving Column Metadata", sq);
+        }
+        return result;
+    }
     /**
      * Function to get the ClickHouse server timezone(Defaults to UTC)
      */

@@ -1,6 +1,6 @@
-from integration.tests.steps.sql import *
-from integration.tests.steps.statements import *
-from integration.tests.steps.service_settings_steps import *
+from integration.tests.steps.mysql import *
+from integration.tests.steps.datatypes import *
+from integration.tests.steps.service_settings import *
 
 
 @TestOutline
@@ -25,15 +25,13 @@ def check_datatype_replication(
         f"{f'MyData Nullable({ch_type})' if nullable else f'MyData {ch_type}'}"
     )
 
-    with Given(f"I create MySql to CH replicated table", description=table_name):
-        create_mysql_to_clickhouse_replicated_table(
-            name=table_name,
-            mysql_columns=mysql_columns,
-            clickhouse_columns=clickhouse_columns,
-            clickhouse_table_engine=clickhouse_table_engine,
+    with Given(f"I create MySQL to CH replicated table", description=table_name):
+        create_mysql_table(
+            table_name=table_name,
+            columns=mysql_columns,
         )
 
-    with When(f"I insert data in MySql table {table_name}"):
+    with When(f"I insert data in MySQL table {table_name}"):
         for i, value in enumerate(values, 1):
             mysql.query(f"INSERT INTO {table_name} VALUES ({i}, {value})")
             with Then(f"I make check that ClickHouse table has same dataset"):
@@ -65,35 +63,7 @@ def check_datatype_replication(
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_Decimal("1.0")
 )
 def decimal(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'DECIMAL' data types."""
-    for clickhouse_table_engine in self.context.clickhouse_table_engines:
-        with Example({clickhouse_table_engine}, flags=TE):
-            check_datatype_replication(
-                mysql_type=mysql_type,
-                ch_type=ch_type,
-                values=values,
-                ch_values=ch_values,
-                nullable=nullable,
-                clickhouse_table_engine=clickhouse_table_engine,
-            )
-
-
-@TestOutline(Feature)
-@Examples(
-    "mysql_type ch_type values ch_values nullable",
-    [
-        # ("DOUBLE", "Float64", ["999.00009"], ["999.00009"], False),
-        # ("DOUBLE", "Float64", ["NULL"], ["\\N"], True),
-        ("DOUBLE", "Decimal128(20)", ["999.00009"], ["999.00009"], False),
-        ("DOUBLE", "Decimal128(20)", ["1.7091"], ["1.7091"], False),
-    ],
-)
-@Requirements(
-    RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_Double("1.0")
-)
-@Requirements()
-def double(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'DOUBLE' data type."""
+    """Check replication of MySQL 'DECIMAL' data types."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -111,17 +81,9 @@ def double(self, mysql_type, ch_type, values, ch_values, nullable):
     "mysql_type ch_type values ch_values  nullable",
     [
         ("DATE", "Date32", ["'2012-12-12'"], ['"2012-12-12"'], False),
-        (
-            "DATETIME",
-            "DateTime64",
-            ["'2018-09-08 17:51:04'"],
-            ['"2018-09-08 17:51:04.000"'],
-            False,
-        ),
         ("TIME", "String", ["'17:51:04.777'"], ['"17:51:05.000000"'], False),
         ("TIME(6)", "String", ["'17:51:04.777'"], ['"17:51:04.777000"'], False),
         ("DATE", "Date32", ["NULL"], ["\\N"], True),
-        ("DATETIME", "DateTime64", ["NULL"], ["\\N"], True),
         ("TIME", "String", ["NULL"], ["\\N"], True),
         ("TIME(6)", "String", ["NULL"], ["\\N"], True),
     ],
@@ -130,7 +92,7 @@ def double(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_DateTime("1.0")
 )
 def date_time(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'DATE' and 'TIME' data type."""
+    """Check replication of MySQL 'DATE' and 'TIME' data type."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -197,34 +159,7 @@ def date_time(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_IntegerTypes("1.0")
 )
 def integer_types(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'INT' data types."""
-    for clickhouse_table_engine in self.context.clickhouse_table_engines:
-        with Example({clickhouse_table_engine}, flags=TE):
-            check_datatype_replication(
-                mysql_type=mysql_type,
-                ch_type=ch_type,
-                values=values,
-                ch_values=ch_values,
-                nullable=nullable,
-                clickhouse_table_engine=clickhouse_table_engine,
-            )
-
-
-@TestOutline(Feature)
-@Examples(
-    "mysql_type ch_type values ch_values nullable",
-    [
-        (
-            "BIGINT UNSIGNED",
-            "UInt64",
-            ["0", "18446744073709551615"],
-            ["0", "18446744073709551615"],
-            False,
-        ),
-    ],
-)
-def bigint(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'BIGINT UNSIGNED' data type."""
+    """Check replication of MySQL 'INT' data types."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -253,7 +188,7 @@ def bigint(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_String("1.0")
 )
 def string(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'STRING' data types."""
+    """Check replication of MySQL 'STRING' data types."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -288,7 +223,7 @@ def string(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_BlobTypes("1.0")
 )
 def blob(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'BLOB' data types."""
+    """Check replication of MySQL 'BLOB' data types."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -316,7 +251,7 @@ def blob(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_Binary("1.0")
 )
 def binary(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'BINARY' data types."""
+    """Check replication of MySQL 'BINARY' data types."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -342,36 +277,7 @@ def binary(self, mysql_type, ch_type, values, ch_values, nullable):
     RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_EnumToString("1.0")
 )
 def enum(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'ENUM' data types."""
-    for clickhouse_table_engine in self.context.clickhouse_table_engines:
-        with Example({clickhouse_table_engine}, flags=TE):
-            check_datatype_replication(
-                mysql_type=mysql_type,
-                ch_type=ch_type,
-                values=values,
-                ch_values=ch_values,
-                nullable=nullable,
-                clickhouse_table_engine=clickhouse_table_engine,
-            )
-
-
-@TestOutline(Feature)
-@Examples(
-    "mysql_type ch_type values ch_values nullable",
-    [
-        (
-            "JSON",
-            "String",
-            ['\'{\\"key1\\": \\"value1\\", \\"key2\\": \\"value2\\"}\''],
-            ['{""key1"": ""value1"", ""key2"": ""value2""}'],
-            False,
-        ),
-        ("JSON", "String", ["NULL"], ["\\N"], True),
-    ],
-)
-@Requirements(RQ_SRS_030_ClickHouse_MySQLToClickHouseReplication_DataTypes_JSON("1.0"))
-def json(self, mysql_type, ch_type, values, ch_values, nullable):
-    """Check replication of MySQl 'JSON' data types."""
+    """Check replication of MySQL 'ENUM' data type."""
     for clickhouse_table_engine in self.context.clickhouse_table_engines:
         with Example({clickhouse_table_engine}, flags=TE):
             check_datatype_replication(
@@ -392,9 +298,5 @@ def json(self, mysql_type, ch_type, values, ch_values, nullable):
 def module(self):
     """Verify correct replication of all supported MySQL data types."""
 
-    with Pool(1) as executor:
-        try:
-            for feature in loads(current_module(), Feature):
-                Feature(test=feature, parallel=True, executor=executor)()
-        finally:
-            join()
+    for feature in loads(current_module(), Feature):
+        Feature(test=feature)()

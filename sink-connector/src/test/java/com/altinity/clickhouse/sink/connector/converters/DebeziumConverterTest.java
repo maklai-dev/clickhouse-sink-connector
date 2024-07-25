@@ -187,7 +187,7 @@ public class DebeziumConverterTest {
 
         //Date32
         java.sql.Date formattedDate32 = DebeziumConverter.DateConverter.convert(date, ClickHouseDataType.Date32);
-        Assert.assertTrue(formattedDate32.toString().equalsIgnoreCase("2283-11-11"));
+        Assert.assertTrue(formattedDate32.toString().equalsIgnoreCase("2299-01-01"));
 
         //Date
         java.sql.Date formattedDate = DebeziumConverter.DateConverter.convert(date, ClickHouseDataType.Date);
@@ -218,7 +218,7 @@ public class DebeziumConverterTest {
 
         // Test max limit
         String formattedTimestamp4 = DebeziumConverter.ZonedTimestampConverter.convert("2338-01-19T03:14:07.99Z", ZoneId.of("UTC"));
-        Assert.assertTrue(formattedTimestamp4.equalsIgnoreCase("2283-11-11 23:59:59.000000"));
+        Assert.assertTrue(formattedTimestamp4.equalsIgnoreCase("2299-12-31 23:59:59.000000"));
     }
 
     @Test
@@ -245,13 +245,14 @@ public class DebeziumConverterTest {
         String userName = "root";
         String password = "root";
         String tableName = "test_ch_jdbc_complex_2";
-        String clusterName = null;
 
         Properties properties = new Properties();
         properties.setProperty("client_name", "Test_1");
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, clusterName, userName, password, config, null);
+        String jdbcUrl = DbWriter.getConnectionString(hostName, port, database);
+        ClickHouseConnection conn1 = DbWriter.createConnection(jdbcUrl, "client_1", userName, password, config);
+        DbWriter dbWriter = new DbWriter(hostName, port, database, tableName, userName, password, config, null, conn1);
         String url = dbWriter.getConnectionString(hostName, port, database);
 
         String insertQueryTemplate = "insert into test_ch_jdbc_complex_2(col1, col2, col3, col4, col5, col6) values(?, ?, ?, ?, ?, ?)";

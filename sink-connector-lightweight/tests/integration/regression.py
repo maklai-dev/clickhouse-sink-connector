@@ -13,7 +13,7 @@ from integration.helpers.argparser import argparser
 from integration.helpers.common import check_clickhouse_version
 from integration.helpers.common import create_cluster
 from integration.requirements.requirements import *
-from integration.tests.steps.steps_global import *
+from integration.tests.steps.clickhouse import *
 
 ffails = {}
 
@@ -37,14 +37,20 @@ def regression(
         "clickhouse_binary_path": clickhouse_binary_path,
         "clickhouse_version": clickhouse_version,
         "stress": stress,
+        "collect_service_logs": collect_service_logs,
     }
 
     self.context.stress = stress
 
-    with Pool(2) as pool:
+    with Pool(1) as pool:
         try:
             Feature(
                 test=load("regression_auto", "regression"),
+                parallel=True,
+                executor=pool,
+            )(**args)
+            Feature(
+                test=load("regression_auto_replicated", "regression"),
                 parallel=True,
                 executor=pool,
             )(**args)

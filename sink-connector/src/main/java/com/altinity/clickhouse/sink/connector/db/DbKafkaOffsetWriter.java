@@ -2,9 +2,10 @@ package com.altinity.clickhouse.sink.connector.db;
 
 import com.altinity.clickhouse.sink.connector.ClickHouseSinkConnectorConfig;
 import com.altinity.clickhouse.sink.connector.model.KafkaMetaData;
+import com.clickhouse.jdbc.ClickHouseConnection;
 import org.apache.kafka.common.TopicPartition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class DbKafkaOffsetWriter extends BaseDbWriter {
 
     Map<String, String> columnNamesToDataTypesMap;
 
-    private static final Logger log = LoggerFactory.getLogger(DbKafkaOffsetWriter.class);
+    private static final Logger log = LogManager.getLogger(DbKafkaOffsetWriter.class);
 
     public DbKafkaOffsetWriter(
             String hostName,
@@ -28,13 +29,15 @@ public class DbKafkaOffsetWriter extends BaseDbWriter {
             String tableName,
             String userName,
             String password,
-            ClickHouseSinkConnectorConfig config
+            ClickHouseSinkConnectorConfig config,
+            ClickHouseConnection connection
     ) {
 
-        super(hostName, port, database, userName, password, config);
+        super(hostName, port, database, userName, password, config, connection);
 
         createOffsetTable();
-        this.columnNamesToDataTypesMap = this.getColumnsDataTypesForTable(tableName);
+        this.columnNamesToDataTypesMap = new DBMetadata().getColumnsDataTypesForTable(tableName, this.getConnection(),
+                database);
         this.query = new QueryFormatter().getInsertQueryUsingInputFunction(tableName, columnNamesToDataTypesMap);
 
     }

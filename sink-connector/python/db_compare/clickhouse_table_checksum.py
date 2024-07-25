@@ -1,5 +1,5 @@
 """
-# -- ============================================================================
+#r/ -- ============================================================================
 # -- FileName     : clickhouse_table_checksum
 # -- Date         : 
 # -- Summary      : calculate a checksum for a clickhouse table 
@@ -126,7 +126,7 @@ def get_table_checksum_query(conn, table):
             nullables.append(column_name)
             select += " case when "+column_name+" is null then '' else "
             if first_column:
-                select += " '#' || "
+                select += " "
 
         if not first_column:
             select += "'#'||"
@@ -142,10 +142,12 @@ def get_table_checksum_query(conn, table):
             elif "Decimal" in data_type:
                 # custom function due to https://github.com/ClickHouse/ClickHouse/issues/30934
                 # requires this function : CREATE OR REPLACE FUNCTION format_decimal AS (x, scale) -> if(locate(toString(x),'.')>0,concat(toString(x),repeat('0',toUInt8(scale-(length(toString(x))-locate(toString(x),'.'))))),concat(toString(x),'.',repeat('0',toUInt8(scale))))
-                select += "format_decimal("+column_name + \
+                select += "toDecimalString("+column_name + \
                     ","+str(numeric_scale)+")"
-            elif "DateTime64(0)" == data_type:
+            elif "DateTime64(0" in data_type:
                 select += f"toString({column_name})"
+            elif "DateTime64(6" in data_type:
+                select += f"if(toString({column_name}) > '{args.max_datetime_value}', '{args.max_datetime_value}', toString({column_name}))"
             elif "DateTime" in data_type:
                 select += f"trim(TRAILING '.' from (trim(TRAILING '0' FROM toString({column_name}))))"
             else:
@@ -193,15 +195,15 @@ def get_table_checksum_query(conn, table):
     return (query, select, order_by_columns, external_column_types)
 
 
-def select_table_statements(table, query, select_query, order_by, external_column_types):
+def select_table_statements(table, query, select_query, order_by, external_column_types, _where):
     statements = []
     external_table_name = args.clickhouse_database+"."+table
     limit = ""
     if args.debug_limit:
         limit = " limit "+args.debug_limit
     where = "1=1"
-    if args.where:
-        where = args.where
+    if _where:
+       where = _where
 
     # skip deleted rows
     if args.sign_column != '':
@@ -225,7 +227,7 @@ def select_table_statements(table, query, select_query, order_by, external_colum
 	  ) as t""".format(select_query=select_query, schema=args.clickhouse_database, table=table, where=where, order_by=order_by, limit=limit)
 
     if args.debug_output:
-        sql = """select  {select_query}  as "hash"   from {schema}.{table} final where  {where} order by {order_by} {limit}""".format(
+        sql = """select  {select_query}  as "hash"   from {schema}.{table} final where  {where} {limit} settings do_not_merge_across_partitions_select_final=1""".format(
             select_query=select_query, schema=args.clickhouse_database, table=table, where=where, order_by=order_by, limit=limit)
     statements.append(sql)
     return statements
@@ -244,7 +246,7 @@ def get_tables_from_regex(conn):
     return x
 
 
-def calculate_checksum(table, clickhouse_user, clickhouse_password):
+def calculate_checksum(table, clickhouse_user, clickhouse_password, where):
     if args.ignore_tables_regex:
         rex_ignore_tables = re.compile(args.ignore_tables_regex, re.IGNORECASE)
         if rex_ignore_tables.match(table):
@@ -260,8 +262,8 @@ def calculate_checksum(table, clickhouse_user, clickhouse_password):
 
     # we need to count the values in CH first
     sql = "select count(*) cnt from "+args.clickhouse_database+"."+table
-    if args.where:
-        sql = sql + " where " + args.where
+    if where:
+        sql = sql + " where " + where
 
     conn = get_connection(clickhouse_user, clickhouse_password)
     (rowset, rowcount) = execute_sql(conn, sql)
@@ -275,7 +277,7 @@ def calculate_checksum(table, clickhouse_user, clickhouse_password):
     (query, select_query, distributed_by,
      external_table_types) = get_table_checksum_query(conn, table)
     statements = select_table_statements(
-        table, query, select_query, distributed_by, external_table_types)
+        table, query, select_query, distributed_by, external_table_types, where)
     compute_checksum(table, clickhouse_user, clickhouse_password, statements)
 
 
@@ -336,6 +338,8 @@ def main():
                         nargs='*', default=['_sign,_version,is_deleted,_is_deleted'])
     parser.add_argument('--threads', type=int,
                         help='number of parallel threads', default=1)
+    parser.add_argument(
+            '--max_datetime_value', help='Maximum Datetime64 datetime', default='2299-12-31 23:59:59.000000', required=False)
 
     global args
     args = parser.parse_args()
@@ -374,7 +378,7 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.threads) as executor:
             futures = []
             for table in tables:
-              futures.append(executor.submit(calculate_checksum, table[0], clickhouse_user, clickhouse_password))
+              futures.append(executor.submit(calculate_checksum, table[0], clickhouse_user, clickhouse_password, args.where))
             for future in concurrent.futures.as_completed(futures):
               if future.exception() is not None:
                 raise future.exception()

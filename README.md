@@ -6,13 +6,9 @@
 </a>
 <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/altinityinfra/clickhouse-sink-connector">
 ### Latest Releases
-| Component            | Docker Tag                                                                              |
-|----------------------|-----------------------------------------------------------------------------------------|
-| Kafka Sink Connector | altinity/clickhouse-sink-connector:latest                                               |
-| Lightweight          | altinityinfra/clickhouse-sink-connector:408-97b1d3d83ef93c1b76a2b1c4d9c544dc67fbbec3-lt |
-|                      |                                                                                         |
+https://github.com/Altinity/clickhouse-sink-connector/releases
 
-# Altinity Sink Connector for ClickHouse
+# Altinity Sink Connector for ClickHouse®
 
 The Altinity Sink Connector moves data automatically from 
 transactional database tables in MySQL and PostgreSQL to ClickHouse
@@ -21,7 +17,7 @@ for analysis.
 ## Features
 
 * Initial data dump and load 
-* Change data capture of new transactions using Debezium
+* Change data capture of new transactions using [Debezium](https://debezium.io/)
 * Automatic loading into ClickHouse
 * Sources: Support for MySQL, PostgreSQL (other databases experimental)
 * Target: Support for ClickHouse ReplacingMergeTree
@@ -30,21 +26,23 @@ for analysis.
 * Checksum-based table comparisons
 * Scalable to 1000s of tables
 * Multiple deployment models
-  * Lightweight: single process that transfers from source to target (prod)
-  * Kafka: separate source and target processes using Kafka as transport (experimental)
+  * Lightweight: single process that transfers from source to target.
+  * Kafka: separate source and target processes using Kafka as transport.
 * Distribution as [Docker](https://hub.docker.com/layers/altinityinfra/clickhouse-sink-connector/408-97b1d3d83ef93c1b76a2b1c4d9c544dc67fbbec3-lt/images/sha256-d134bc05e50df7f63025e776ab6e3216c6622cd159eb0f2d459ea2ce8975f396?context=explore)
  container
 
 ## Getting Started
 
-See [QuickStart Guide(Lightweight)](doc/quickstart.md).
+[QuickStart Guide: Lightweight (MySQL)](doc/quickstart.md)\
+[QuickStart Guide: Lightweight (PostgreSQL)](doc/quickstart_postgres.md)\
+[QuickStart Guide: Kafka](doc/quickstart_kafka.md)
 
 ## Blog Articles
 
 First two are good tutorials on MySQL and PostgreSQL respectively. 
 
-- [Altinity Sink connector for ClickHouse](https://altinity.com/blog/fast-mysql-to-clickhouse-replication-announcing-the-altinity-sink-connector-for-clickhouse)
-- [Replicating PostgreSQL to ClickHouse](https://altinity.com/blog/replicating-data-from-postgresql-to-clickhouse-with-the-altinity-sink-connector)
+- [Altinity Sink Connector (MySQL)](https://altinity.com/blog/fast-mysql-to-clickhouse-replication-announcing-the-altinity-sink-connector-for-clickhouse)
+- [Altinity Sink Connector (PostgreSQL)](https://altinity.com/blog/replicating-data-from-postgresql-to-clickhouse-with-the-altinity-sink-connector)
 - [ClickHouse as an analytic extension for MySQL](https://altinity.com/blog/using-clickhouse-as-an-analytic-extension-for-mysql?utm_campaign=Brand&utm_content=224583767&utm_medium=social&utm_source=linkedin&hss_channel=lcp-10955938)
 
 ## Reference Documentation
@@ -54,12 +52,12 @@ First two are good tutorials on MySQL and PostgreSQL respectively.
 * [Architecture Overview](doc/architecture.md)
 * [Lightweight Sink Connect CLI](doc/sink_connector_cli.md)
 * [Mutable Data Handling](doc/mutable_data.md)
-
-### Installation
-
-* [Sink Connector Setup(Kafka)](doc/setup.md)
-* [Sink Connector Configuration(Kafka & Lightweight)](doc/configuration.md)
-* [Debezium Setup](doc/debezium_setup.md)
+* [ClickHouse Table Engine Types](doc/clickhouse_engines.md)
+* [Troubleshooting](doc/Troubleshooting.md)
+* [TimeZone and DATETIME/TIMESTAMP](doc/timezone.md)
+* [Logging](doc/logging.md)
+* [Production Setup](doc/production_setup.md)
+* [Adding new tables(Incremental Snapshot)](doc/incremental_snapshot.md)
 
 ### Operations
 
@@ -68,11 +66,12 @@ First two are good tutorials on MySQL and PostgreSQL respectively.
 
 ### Development
 
+* [Development](doc/development.md)
 * [Testing](doc/TESTING.md)
 
 ## Roadmap 
 
-See [2024 Roadmap](https://github.com/Altinity/clickhouse-sink-connector/issues/401).
+[2024 Roadmap](https://github.com/Altinity/clickhouse-sink-connector/issues/401)
 
 ## Help
 

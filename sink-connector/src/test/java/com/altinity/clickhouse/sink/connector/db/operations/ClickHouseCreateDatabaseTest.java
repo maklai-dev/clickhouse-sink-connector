@@ -1,6 +1,7 @@
 package com.altinity.clickhouse.sink.connector.db.operations;
 
 import com.altinity.clickhouse.sink.connector.ClickHouseSinkConnectorConfig;
+import com.altinity.clickhouse.sink.connector.db.BaseDbWriter;
 import com.clickhouse.jdbc.ClickHouseConnection;
 import com.altinity.clickhouse.sink.connector.db.DbWriter;
 import com.altinity.clickhouse.sink.connector.db.operations.ClickHouseCreateDatabase;
@@ -38,12 +39,13 @@ public class ClickHouseCreateDatabaseTest {
         String userName = "default";
         String password = "";
         String systemDb = "system";
-        String clusterName = "";
         dbName = "test_create_db";
 
         ClickHouseSinkConnectorConfig config= new ClickHouseSinkConnectorConfig(new HashMap<>());
-        dbWriter = new DbWriter(hostName, port, dbName, null, clusterName, userName, password, config, null);
-        maintenanceDbWriter = new DbWriter(hostName, port, systemDb, null, clusterName, userName, password, config, null);
+        String jdbcUrl = BaseDbWriter.getConnectionString(hostName, port, systemDb);
+        ClickHouseConnection conn = DbWriter.createConnection(jdbcUrl, "client_1", userName, password, config);
+        dbWriter = new DbWriter(hostName, port, dbName, null, userName, password, config, null, conn);
+        maintenanceDbWriter = new DbWriter(hostName, port, systemDb, null, userName, password, config, null, conn);
     }
 
     @BeforeEach                                         
@@ -57,7 +59,7 @@ public class ClickHouseCreateDatabaseTest {
         ClickHouseCreateDatabase act = new ClickHouseCreateDatabase();
         ClickHouseConnection conn = dbWriter.getConnection();
         try {
-            act.createNewDatabase(conn, dbName, "");
+            act.createNewDatabase(conn, dbName);
         } catch(SQLException se) {
             //System.out.println(se.getMessage());
             Assert.assertTrue(false);

@@ -1,6 +1,6 @@
-from integration.tests.steps.sql import *
-from integration.tests.steps.statements import *
-from integration.tests.steps.service_settings_steps import *
+from integration.tests.steps.mysql import *
+from integration.tests.steps.datatypes import *
+from integration.tests.steps.service_settings import *
 import string
 import random
 from keyword import iskeyword
@@ -32,15 +32,11 @@ def generate_table_names(num_names, max_length=64):
     table_names.update(reserved_keywords)
 
     while len(table_names) < num_names:
-        # Randomly choose the length of the table name, ensuring it's at least 1 character
         length = random.randint(1, max_length)
 
-        # Generate a random table name
         name = generate_table_name(length)
 
-        # Check if the name is a reserved keyword or starts with a number
         if iskeyword(name) or name[0] in string.digits:
-            # Add backticks to handle these special cases
             name = f"{name}"
 
         table_names.add(f"{name}")
@@ -55,26 +51,24 @@ def check_table_names(self, table_name):
     clickhouse_node = self.context.clickhouse_node
 
     with Given(f"I create the {table_name} table"):
-        create_mysql_to_clickhouse_replicated_table(
-            name=f"\`{table_name}\`",
-            mysql_columns="x INT",
-            clickhouse_columns="x Int32",
-            clickhouse_table_engine=self.context.clickhouse_table_engines[0],
+        create_mysql_table(
+            table_name=rf"\`{table_name}\`",
+            columns="x INT",
         )
 
     with And("I insert data into the table"):
-        mysql_node.query(f"INSERT INTO \`{table_name}\` VALUES (1, 1);")
+        mysql_node.query(rf"INSERT INTO \`{table_name}\` VALUES (1, 1);")
 
     with Then(f"I check that the {table_name} was created in the ClickHouse side"):
         for retry in retries(timeout=40, delay=1):
             with retry:
-                clickhouse_node.query(f"EXISTS test.{table_name}", message="1")
+                clickhouse_node.query(rf"EXISTS test.\`{table_name}\`", message="1")
 
     with And("I check that the data was inserted correctly into the ClickHouse table"):
         for retry in retries(timeout=40, delay=1):
             with retry:
                 clickhouse_data = clickhouse_node.query(
-                    f"SELECT id,x FROM test.{table_name} FORMAT CSV"
+                    rf"SELECT id,x FROM test.\`{table_name}\` FORMAT CSV"
                 )
                 assert clickhouse_data.output.strip() == "1,1", error()
 
